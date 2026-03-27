@@ -75,9 +75,9 @@ class ReportsAPITest(APITestCase):
         daily_response = self.client.get(f"/api/v1/reports/daily-sales/?date={report_date}")
         self.assertEqual(daily_response.status_code, status.HTTP_200_OK)
         self.assertEqual(daily_response.data["receipts_count"], 1)
-        self.assertEqual(str(daily_response.data["total_sales"]), "84")
+        self.assertEqual(str(daily_response.data["total_sales"]), "84.00")
 
         payment_response = self.client.get(f"/api/v1/reports/payment-summary/?date={report_date}")
         self.assertEqual(payment_response.status_code, status.HTTP_200_OK)
-        self.assertEqual(str(payment_response.data["total_collected"]), "84")
+        self.assertEqual(str(payment_response.data["total_collected"]), "84.00")
         self.assertEqual(len(payment_response.data["by_method"]), 2)

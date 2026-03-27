@@ -1,6 +1,7 @@
+from collections import defaultdict
 from datetime import datetime
+from decimal import Decimal
 
-from django.db.models import Sum
 from django.utils.timezone import make_aware
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -26,18 +27,16 @@ class DailySalesReportView(APIView):
         except ValueError:
             return Response({"detail": "Invalid date format. Use YYYY-MM-DD."}, status=400)
 
-        receipts = Receipt.objects.filter(issued_at__range=[start, end])
-        totals = receipts.aggregate(
-            subtotal=Sum("subtotal"),
-            tax_amount=Sum("tax_amount"),
-            total_sales=Sum("total"),
-        )
+        receipts = Receipt.objects.filter(issued_at__range=[start, end]).only("subtotal", "tax_amount", "total")
+        subtotal = sum((receipt.subtotal for receipt in receipts), Decimal("0.00"))
+        tax_amount = sum((receipt.tax_amount for receipt in receipts), Decimal("0.00"))
+        total_sales = sum((receipt.total for receipt in receipts), Decimal("0.00"))
         data = {
             "date": date_str,
-            "receipts_count": receipts.count(),
-            "subtotal": totals["subtotal"] or 0,
-            "tax_amount": totals["tax_amount"] or 0,
-            "total_sales": totals["total_sales"] or 0,
+            "receipts_count": len(receipts),
+            "subtotal": subtotal,
+            "tax_amount": tax_amount,
+            "total_sales": total_sales,
         }
         return Response(data)
 
@@ -53,11 +52,11 @@ class PaymentSummaryReportView(APIView):
         except ValueError:
             return Response({"detail": "Invalid date format. Use YYYY-MM-DD."}, status=400)
 
-        rows = (
-            Payment.objects.filter(paid_at__range=[start, end])
-            .values("method")
-            .annotate(total=Sum("amount"))
-            .order_by("method")
-        )
-        total = Payment.objects.filter(paid_at__range=[start, end]).aggregate(total=Sum("amount"))["total"] or 0
-        return Response({"date": date_str, "total_collected": total, "by_method": list(rows)})
+        payments = list(Payment.objects.filter(paid_at__range=[start, end]).only("method", "amount"))
+        by_method = defaultdict(lambda: Decimal("0.00"))
+        for payment in payments:
+            by_method[payment.method] += payment.amount
+
+        rows = [{"method": method, "total": total} for method, total in sorted(by_method.items())]
+        total = sum((payment.amount for payment in payments), Decimal("0.00"))
+        return Response({"date": date_str, "total_collected": total, "by_method": rows})
