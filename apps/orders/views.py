@@ -1,11 +1,13 @@
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema
 
 from .models import MenuItem, Order, OrderItem, Payment, Receipt
 from .serializers import (
     AddOrderItemSerializer,
     CloseOrderSerializer,
+    OrderItemSerializer,
     MenuItemSerializer,
     OrderSerializer,
     PaymentSerializer,
@@ -23,6 +25,12 @@ class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all().prefetch_related("items__menu_item").order_by("-created_at")
     serializer_class = OrderSerializer
 
+    @extend_schema(
+        request=AddOrderItemSerializer,
+        responses={201: OrderItemSerializer},
+        summary="Add an item to the order",
+        description="Adds a `menu_item` with given `qty` to this order. Not allowed when order is closed or cancelled.",
+    )
     @action(detail=True, methods=["post"], url_path="add-item")
     def add_item(self, request, pk=None):
         order = self.get_object()
@@ -44,18 +52,14 @@ class OrderViewSet(viewsets.ModelViewSet):
             unit_price_snapshot=unit_price,
             line_total=line_total,
         )
-        return Response(
-            {
-                "id": order_item.id,
-                "order": order.id,
-                "menu_item": menu_item.id,
-                "qty": order_item.qty,
-                "unit_price_snapshot": order_item.unit_price_snapshot,
-                "line_total": order_item.line_total,
-            },
-            status=status.HTTP_201_CREATED,
-        )
+        return Response(OrderItemSerializer(order_item).data, status=status.HTTP_201_CREATED)
 
+    @extend_schema(
+        request=CloseOrderSerializer,
+        responses={200: ReceiptSerializer},
+        summary="Close order and generate receipt",
+        description="Closes the order and generates a receipt using the provided `tax_percent`.",
+    )
     @action(detail=True, methods=["post"], url_path="close")
     def close(self, request, pk=None):
         order = self.get_object()
