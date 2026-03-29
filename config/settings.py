@@ -30,7 +30,8 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-^sa3)!#ufw%38657y5*7qfjooi
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 allowed_hosts_env = os.getenv('ALLOWED_HOSTS', '').strip()
-ALLOWED_HOSTS = allowed_hosts_env.split(',') if allowed_hosts_env else []
+# By default (no env provided), allow local development hosts in the base settings.
+ALLOWED_HOSTS = allowed_hosts_env.split(',') if allowed_hosts_env else ['127.0.0.1', 'localhost']
 
 
 # Application definition
