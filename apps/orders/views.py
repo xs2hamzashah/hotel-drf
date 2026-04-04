@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema
 
 from .models import Category, MenuItem, Order, OrderItem, Payment, Receipt
+from .filters import CategoryFilter, MenuItemFilter, OrderFilter
 from .serializers import (
     CategorySerializer,
     AddOrderItemSerializer,
@@ -20,11 +21,13 @@ from .services import close_order_and_generate_receipt
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all().order_by("name")
     serializer_class = CategorySerializer
+    filterset_class = CategoryFilter
 
 
 class MenuItemViewSet(viewsets.ModelViewSet):
     queryset = MenuItem.objects.select_related("category").all().order_by("-created_at")
     serializer_class = MenuItemSerializer
+    filterset_class = MenuItemFilter
 
 
 class OrderViewSet(viewsets.ModelViewSet):
@@ -34,6 +37,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         .order_by("-created_at")
     )
     serializer_class = OrderSerializer
+    filterset_class = OrderFilter
 
     @extend_schema(
         request=AddOrderItemSerializer,

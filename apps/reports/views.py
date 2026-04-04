@@ -56,7 +56,7 @@ class PaymentSummaryReportView(APIView):
         except ValueError:
             return Response({"detail": "Invalid date format. Use YYYY-MM-DD."}, status=400)
 
-        payments = list(Payment.objects.filter(paid_at__range=[start, end]).only("method", "amount"))
+        payments = Payment.objects.filter(paid_at__range=[start, end]).only("method", "amount")
         by_method = defaultdict(lambda: Decimal("0.00"))
         for payment in payments:
             by_method[payment.method] += payment.amount

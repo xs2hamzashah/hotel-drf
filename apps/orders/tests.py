@@ -109,3 +109,15 @@ class CategoryAPITest(APITestCase):
         )
         self.assertEqual(add_item.status_code, status.HTTP_201_CREATED)
         self.assertEqual(add_item.data["menu_item_category_name"], "Food")
+
+    def test_filter_menu_items_by_category(self):
+        c1 = self.client.post("/api/v1/categories/", {"name": "Food", "is_active": True}, format="json").data
+        c2 = self.client.post("/api/v1/categories/", {"name": "Drinks", "is_active": True}, format="json").data
+        self.client.post("/api/v1/menu-items/", {"name": "Pizza", "price": "30.00", "is_active": True, "category": c1["id"]}, format="json")
+        self.client.post("/api/v1/menu-items/", {"name": "Cola", "price": "10.00", "is_active": True, "category": c2["id"]}, format="json")
+
+        # filter by category id
+        resp = self.client.get(f"/api/v1/menu-items/?category_id={c1['id']}")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(resp.data), 1)
+        self.assertEqual(resp.data[0]["name"], "Pizza")
