@@ -3,18 +3,43 @@ from decimal import Decimal
 from django.db.models import Sum
 from rest_framework import serializers
 
-from .models import MenuItem, Order, OrderItem, Payment, Receipt
+from .models import Category, MenuItem, Order, OrderItem, Payment, Receipt
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ["id", "name", "is_active", "created_at"]
+        read_only_fields = ["id", "created_at"]
 
 
 class MenuItemSerializer(serializers.ModelSerializer):
+    category = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.filter(is_active=True),
+        allow_null=True,
+        required=False,
+    )
+    category_name = serializers.CharField(source="category.name", read_only=True)
+
     class Meta:
         model = MenuItem
-        fields = ["id", "name", "price", "is_active", "created_at", "updated_at"]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        fields = [
+            "id",
+            "name",
+            "price",
+            "is_active",
+            "category",
+            "category_name",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at", "category_name"]
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
     menu_item_name = serializers.CharField(source="menu_item.name", read_only=True)
+    menu_item_category_id = serializers.IntegerField(source="menu_item.category_id", read_only=True)
+    menu_item_category_name = serializers.CharField(source="menu_item.category.name", read_only=True)
 
     class Meta:
         model = OrderItem
@@ -22,12 +47,22 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "id",
             "menu_item",
             "menu_item_name",
+            "menu_item_category_id",
+            "menu_item_category_name",
             "qty",
             "unit_price_snapshot",
             "line_total",
             "created_at",
         ]
-        read_only_fields = ["id", "unit_price_snapshot", "line_total", "created_at", "menu_item_name"]
+        read_only_fields = [
+            "id",
+            "unit_price_snapshot",
+            "line_total",
+            "created_at",
+            "menu_item_name",
+            "menu_item_category_id",
+            "menu_item_category_name",
+        ]
 
 
 class OrderSerializer(serializers.ModelSerializer):
