@@ -4,7 +4,7 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .models import MenuItem, Order, Payment, Receipt
+from .models import Category, MenuItem, Order, Payment, Receipt
 
 
 class OrderFlowAPITest(APITestCase):
@@ -81,3 +81,31 @@ class ReportsAPITest(APITestCase):
         self.assertEqual(payment_response.status_code, status.HTTP_200_OK)
         self.assertEqual(str(payment_response.data["total_collected"]), "84.00")
         self.assertEqual(len(payment_response.data["by_method"]), 2)
+
+
+class CategoryAPITest(APITestCase):
+    def test_category_crud_and_menuitem_link(self):
+        # create category
+        create_cat = self.client.post("/api/v1/categories/", {"name": "Food", "is_active": True}, format="json")
+        self.assertEqual(create_cat.status_code, status.HTTP_201_CREATED)
+        category_id = create_cat.data["id"]
+
+        # create menu item with category
+        create_item = self.client.post(
+            "/api/v1/menu-items/",
+            {"name": "Pizza", "price": "30.00", "is_active": True, "category": category_id},
+            format="json",
+        )
+        self.assertEqual(create_item.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(create_item.data["category"], category_id)
+        self.assertEqual(create_item.data["category_name"], "Food")
+
+        # order flow includes category info on added item
+        order = self.client.post("/api/v1/orders/", {"customer_name": "CatUser"}, format="json").data
+        add_item = self.client.post(
+            f"/api/v1/orders/{order['id']}/add-item/",
+            {"menu_item_id": create_item.data["id"], "qty": 1},
+            format="json",
+        )
+        self.assertEqual(add_item.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(add_item.data["menu_item_category_name"], "Food")
