@@ -2,6 +2,8 @@ from decimal import Decimal
 
 from django.db.models import Sum
 from rest_framework import serializers
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field
 
 from .models import Category, MenuItem, Order, OrderItem, Payment, Receipt
 
@@ -83,6 +85,7 @@ class OrderSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "order_no", "created_at", "updated_at", "subtotal", "items"]
 
+    @extend_schema_field(OpenApiTypes.DECIMAL)
     def get_subtotal(self, obj):
         subtotal = obj.items.aggregate(total=Sum("line_total"))["total"]
         return subtotal or Decimal("0.00")

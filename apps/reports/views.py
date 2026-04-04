@@ -5,8 +5,10 @@ from decimal import Decimal
 from django.utils.timezone import make_aware
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from drf_spectacular.utils import extend_schema
 
 from apps.orders.models import Payment, Receipt
+from .serializers import DailySalesReportSerializer, PaymentSummaryReportSerializer
 
 
 def _resolve_day_bounds(date_str: str):
@@ -17,6 +19,7 @@ def _resolve_day_bounds(date_str: str):
 
 
 class DailySalesReportView(APIView):
+    @extend_schema(responses=DailySalesReportSerializer)
     def get(self, request):
         date_str = request.query_params.get("date")
         if not date_str:
@@ -42,6 +45,7 @@ class DailySalesReportView(APIView):
 
 
 class PaymentSummaryReportView(APIView):
+    @extend_schema(responses=PaymentSummaryReportSerializer)
     def get(self, request):
         date_str = request.query_params.get("date")
         if not date_str:
