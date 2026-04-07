@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     'django_filters',
     'rest_framework',
     'drf_spectacular',
@@ -53,6 +54,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -145,3 +147,13 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Simple DRF backend for orders, receipts, payments, and reports.",
     "VERSION": "1.0.0",
 }
+
+# CORS configuration (allow specific origins via environment)
+cors_origins_env = os.getenv('CORS_ALLOWED_ORIGINS', '').strip()
+FRONTEND_ORIGIN = os.getenv('FRONTEND_ORIGIN')
+_origins = []
+if cors_origins_env:
+    _origins.extend([o for o in cors_origins_env.split(',') if o])
+if FRONTEND_ORIGIN:
+    _origins.append(FRONTEND_ORIGIN)
+CORS_ALLOWED_ORIGINS = _origins
